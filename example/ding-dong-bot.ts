@@ -35,7 +35,7 @@ import {
   MediaMessage,
 }               from '../index'
 
-const BOT_QR_CODE_IMAGE_FILE = path.join(
+var BOT_QR_CODE_IMAGE_FILE = path.join(
   __dirname,
   '../docs/images/apple.png',
 )
@@ -52,7 +52,7 @@ const welcome = `
 =============== Powered by Wechaty ===============
 -------- https://github.com/chatie/wechaty --------
 
-I'm a bot, my superpower is talk in Wechat.
+I'm a bot, mey superpower is talk in Wechat.
 
 If you send me a 'ding', I will reply you a 'dong'!
 __________________________________________________
@@ -67,7 +67,7 @@ Please wait... I'm trying to login in...
 console.log(welcome)
 const bot = Wechaty.instance({ profile: config.default.DEFAULT_PROFILE })
 const num = 0
-
+var play = true
 bot
 .on('logout'	, user => log.info('Bot', `${user.name()} logouted`))
 .on('login'	  , user => {
@@ -83,43 +83,38 @@ bot
 })
 .on('message', async m => {
   try {
-    const room = m.room()
-    console.log(
-      (room ? `${room}` : '')
-      + `${m.from()}:${m}`,
-    )
+      const room = m.room()
+      const content = m.content()
+      log.info(
+        (room ? `${room}` : '')
+        + `${m.from()}:${m}`,
+      )
+      if (m.self()) { return }
 
-    if (/^(play)$/i.test(m.content()) && !m.self()) {
-      await m.say('Starting Game!')
-      log.info('Bot', 'REPLY: Starting Game!')
-     
-      const playGame =  `Let's Review Today!\n\n` +
-                            `What is the following picture?`
+      if (/^(play)$/i.test(content)) {
+        await m.say('Starting Game!')
+        // start game
+        play = true
+        log.info('Bot', 'REPLY: Starting Game!')
 
-      await m.say(playGame)
-      await m.say(new MediaMessage(BOT_QR_CODE_IMAGE_FILE))
-      //await m.say('PSSSST: WHAT IS THIS?')
-      log.info('Bot', 'REPLY: Image')
-      // Don't forget to add && !m.self()
-      if(num>0) return
-      num++
-      bot.on('message',async play(n:Message)=>{
-        if(/^(play)$/.test(n.content()) || n.self()) return
-        if (/^(apple|Apple)$/i.test(m.content())) {
-         await m.say('Incorrect! Please try again.')
-          log.info('Bot', 'REPLY: Starting Game!')
-          log.info(m.content())
+        const playGame = `Let's Review Today!\n\n` +
+          `What is the following picture?`
+
+        await m.say(playGame)
+        await m.say(new MediaMessage(BOT_QR_CODE_IMAGE_FILE))
+        log.info('Bot', 'REPLY: Image')
+        // Don't forget to add && !m.self()
+        log.info('Bot', 'REPLY: Starting Game!')
+      } else if (play) {
+        if (/^(apple)$/i.test(content)) {
+          m.say('Correct. Say "play" to play again.')
+          log.info('Bot', 'REPLY: Close Game!')
+          // close game
+          play = false
         } else {
-          await m.say('Correct. Say "play" to play again.')
+          m.say('Incorrect! Please try again.')
         }
-        bot.removeListener('message',play)
-        num--
-      })
-
-
-      log.info('Bot', 'REPLY: Starting Game!')
-
-    }
+      }
   } catch (e) {
     log.error('Bot', 'on(message) exception: %s' , e)
   }
